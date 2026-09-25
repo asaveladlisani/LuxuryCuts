@@ -70,7 +70,7 @@ export default function About() {
           {/* Story Image */}
           <div className="relative aspect-[4/5] overflow-hidden rounded-[2rem] border border-white/10 bg-[#151515]">
             <img
-              src="/images/luxurycuts-story.jpg"
+              src={`${import.meta.env.BASE_URL}images/luxurycuts-story.jpg`}
               alt="LuxuryCuts barber styling a client"
               className="h-full w-full object-cover"
             />

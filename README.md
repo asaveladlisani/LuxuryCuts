@@ -8,7 +8,7 @@ A production-style React + TypeScript barber shop website for the Talent Forge p
 - shadcn/ui approach (reusable UI primitives/components)
 - Framer Motion
 - Node.js + Express + TypeScript
-- SQLite via better-sqlite3
+- PostgreSQL via node-postgres (`pg`)
 
 ## Run locally
 
@@ -16,6 +16,12 @@ A production-style React + TypeScript barber shop website for the Talent Forge p
 npm install
 npm install --prefix client
 npm install --prefix server
+cp client/.env.example client/.env
+cp server/.env.example server/.env
+
+# Local Postgres (or set DATABASE_URL to your Render external URL)
+docker run -d --name luxurycuts-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=luxurycuts -p 5432:5432 postgres:16-alpine
+
 npm run dev
 ```
 
@@ -32,11 +38,35 @@ VITE_API_URL=https://your-api.example.com/api
 - Responsive home, services, about, booking and terms pages
 - Mobile navigation
 - Promotional modal
-- SQLite-backed service, barber and booking data
+- Postgres-backed service, barber and booking data (tables and seed data are created on startup)
 - Real booking creation and slot availability
 - Dynamic Google Calendar event URL
 - Dynamic `.ics` calendar download compatible with Apple Calendar and other calendar clients
 - Booking confirmation with selected service, barber, date, time and duration
 
-## Production deployment
-Build the client with `npm run build --prefix client`. Deploy the generated `client/dist` as a static frontend and the Express server as a Node service with a persistent SQLite volume. For production, set `VITE_API_URL` to the public API URL.
+## Production deployment (free demo)
+
+**API + database → Render (free web service + free Postgres)**
+1. In Render: **New → Blueprint**, select this repo. `render.yaml` creates the `luxurycuts-db` Postgres database and the `luxurycuts-api` web service from `server/`, with `DATABASE_URL` wired up automatically.
+2. Note the service URL, e.g. `https://luxurycuts-api.onrender.com`.
+
+The free web service sleeps after ~15 min idle (first request takes ~30–60s). Bookings persist in Postgres across restarts, but Render's free Postgres databases expire after a limited period (30 days at the time of writing); after that, create a new one and redeploy.
+
+**Client → GitHub Pages**
+1. Repo **Settings → Pages → Source: GitHub Actions**.
+2. Repo **Settings → Secrets and variables → Actions → Variables**: add `VITE_API_URL` = `https://<your-render-service>.onrender.com/api`.
+3. Push to `main` (or run the workflow manually). The site is published at `https://asaveladlisani.github.io/LuxuryCuts/`.
+
+The client uses hash routing (`/#/booking`) so page refreshes work on GitHub Pages.
+
+### Environment variables
+
+| File | Variable | Purpose |
+|---|---|---|
+| `client/.env` | `VITE_API_URL` | API base URL (with `/api`) |
+| `client/.env` | `VITE_BASE_PATH` | Base path the site is served from (`/` locally) |
+| `server/.env` | `PORT` | API port (Render sets this) |
+| `server/.env` | `CORS_ORIGIN` | Comma-separated allowed origins; empty allows all |
+| `server/.env` | `DATABASE_URL` | Postgres connection string (Render sets this) |
+
+Copy each `.env.example` to `.env` for local development.

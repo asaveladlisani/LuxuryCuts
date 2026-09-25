@@ -3,5 +3,6 @@ dist/
 .env
 .env.*
 !.env.example
-server/data/*.sqlite
 .DS_Store
+*.tsbuildinfo
+server/data/
