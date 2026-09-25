@@ -248,6 +248,20 @@ header button[aria-label="Close menu"] {
         color 0.2s ease;
 }
 
+/*
+   Hide the mobile menu button and panel on desktop. These rules are
+   unlayered, so they override Tailwind's md:hidden utility.
+*/
+
+@media (min-width: 768px) {
+    header button[aria-label="Menu"],
+    header button[aria-label="Open menu"],
+    header button[aria-label="Close menu"],
+    header .md\:hidden.border-t {
+        display: none;
+    }
+}
+
 header button:hover {
     background-color: #c9a96e18;
 
