@@ -17,7 +17,7 @@ const times = [
 ];
 
 // Get available booking times
-r.get('/availability', async (req, res) => {
+r.get('/availability', (req, res) => {
   const { date, serviceId, barberId } = req.query;
 
   if (!date || !serviceId || !barberId) {
@@ -26,14 +26,15 @@ r.get('/availability', async (req, res) => {
     });
   }
 
-  const { rows } = await db.query<{ booking_time: string }>(
-    `SELECT booking_time
-     FROM bookings
-     WHERE booking_date = $1
-       AND barber_id = $2
-       AND status = 'confirmed'`,
-    [date, barberId]
-  );
+  const rows = db
+    .prepare(
+      `SELECT booking_time
+       FROM bookings
+       WHERE booking_date = ?
+         AND barber_id = ?
+         AND status = 'confirmed'`
+    )
+    .all(date, barberId) as { booking_time: string }[];
 
   const taken = new Set(rows.map((x) => x.booking_time));
 
@@ -41,7 +42,7 @@ r.get('/availability', async (req, res) => {
 });
 
 // Create booking
-r.post('/', async (req, res) => {
+r.post('/', (req, res) => {
   const {
     customerName,
     customerEmail,
@@ -67,51 +68,61 @@ r.post('/', async (req, res) => {
   }
 
   // Check if the selected slot is already booked
-  const exists = await db.query(
-    `SELECT id
-     FROM bookings
-     WHERE booking_date = $1
-       AND booking_time = $2
-       AND barber_id = $3
-       AND status = 'confirmed'`,
-    [date, time, barberId]
-  );
+  const exists = db
+    .prepare(
+      `SELECT id
+       FROM bookings
+       WHERE booking_date = ?
+         AND booking_time = ?
+         AND barber_id = ?
+         AND status = 'confirmed'`
+    )
+    .get(date, time, barberId);
 
-  if (exists.rowCount) {
+  if (exists) {
     return res.status(409).json({
       message: 'That time is no longer available. Please choose another slot.',
     });
   }
 
   // Create booking
-  const info = await db.query<{ id: number }>(
-    `INSERT INTO bookings (
-      customer_name,
-      customer_email,
-      customer_phone,
-      service_id,
-      barber_id,
-      booking_date,
-      booking_time
+  const info = db
+    .prepare(
+      `INSERT INTO bookings (
+        customer_name,
+        customer_email,
+        customer_phone,
+        service_id,
+        barber_id,
+        booking_date,
+        booking_time
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-    VALUES ($1, $2, $3, $4, $5, $6, $7)
-    RETURNING id`,
-    [customerName, customerEmail, customerPhone, serviceId, barberId, date, time]
-  );
+    .run(
+      customerName,
+      customerEmail,
+      customerPhone,
+      serviceId,
+      barberId,
+      date,
+      time
+    );
 
   // Return complete booking information
-  const { rows: [booking] } = await db.query(
-    `SELECT
-      b.*,
-      s.name AS service,
-      s.duration_minutes AS duration,
-      br.name AS barber
-     FROM bookings b
-     JOIN services s ON s.id = b.service_id
-     JOIN barbers br ON br.id = b.barber_id
-     WHERE b.id = $1`,
-    [info.rows[0].id]
-  );
+  const booking = db
+    .prepare(
+      `SELECT
+        b.*,
+        s.name AS service,
+        s.duration_minutes AS duration,
+        br.name AS barber
+       FROM bookings b
+       JOIN services s ON s.id = b.service_id
+       JOIN barbers br ON br.id = b.barber_id
+       WHERE b.id = ?`
+    )
+    .get(info.lastInsertRowid);
 
   res.status(201).json(booking);
 });

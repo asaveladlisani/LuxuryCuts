@@ -1,9 +1,3 @@
-databases:
-  - name: luxurycuts-db
-    plan: free
-    databaseName: luxurycuts
-    user: luxurycuts
-
 services:
   - type: web
     name: luxurycuts-api
@@ -18,7 +12,3 @@ services:
         value: 20
       - key: CORS_ORIGIN
         value: https://asaveladlisani.github.io
-      - key: DATABASE_URL
-        fromDatabase:
-          name: luxurycuts-db
-          property: connectionString

@@ -8,7 +8,7 @@ A production-style React + TypeScript barber shop website for the Talent Forge p
 - shadcn/ui approach (reusable UI primitives/components)
 - Framer Motion
 - Node.js + Express + TypeScript
-- PostgreSQL via node-postgres (`pg`)
+- SQLite via better-sqlite3
 
 ## Run locally
 
@@ -18,9 +18,6 @@ npm install --prefix client
 npm install --prefix server
 cp client/.env.example client/.env
 cp server/.env.example server/.env
-
-# Local Postgres (or set DATABASE_URL to your Render external URL)
-docker run -d --name luxurycuts-pg -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=luxurycuts -p 5432:5432 postgres:16-alpine
 
 npm run dev
 ```
@@ -38,7 +35,7 @@ VITE_API_URL=https://your-api.example.com/api
 - Responsive home, services, about, booking and terms pages
 - Mobile navigation
 - Promotional modal
-- Postgres-backed service, barber and booking data (tables and seed data are created on startup)
+- SQLite-backed service, barber and booking data
 - Real booking creation and slot availability
 - Dynamic Google Calendar event URL
 - Dynamic `.ics` calendar download compatible with Apple Calendar and other calendar clients
@@ -46,11 +43,11 @@ VITE_API_URL=https://your-api.example.com/api
 
 ## Production deployment (free demo)
 
-**API + database → Render (free web service + free Postgres)**
-1. In Render: **New → Blueprint**, select this repo. `render.yaml` creates the `luxurycuts-db` Postgres database and the `luxurycuts-api` web service from `server/`, with `DATABASE_URL` wired up automatically.
+**API → Render (free web service)**
+1. In Render: **New → Blueprint**, select this repo. `render.yaml` creates `luxurycuts-api` from `server/`.
 2. Note the service URL, e.g. `https://luxurycuts-api.onrender.com`.
 
-The free web service sleeps after ~15 min idle (first request takes ~30–60s). Bookings persist in Postgres across restarts, but Render's free Postgres databases expire after a limited period (30 days at the time of writing); after that, create a new one and redeploy.
+The free tier sleeps after ~15 min idle (first request takes ~30–60s) and its disk is ephemeral, so the SQLite database resets to the seed data on each restart/redeploy.
 
 **Client → GitHub Pages**
 1. Repo **Settings → Pages → Source: GitHub Actions**.
@@ -67,6 +64,5 @@ The client uses hash routing (`/#/booking`) so page refreshes work on GitHub Pag
 | `client/.env` | `VITE_BASE_PATH` | Base path the site is served from (`/` locally) |
 | `server/.env` | `PORT` | API port (Render sets this) |
 | `server/.env` | `CORS_ORIGIN` | Comma-separated allowed origins; empty allows all |
-| `server/.env` | `DATABASE_URL` | Postgres connection string (Render sets this) |
 
 Copy each `.env.example` to `.env` for local development.
