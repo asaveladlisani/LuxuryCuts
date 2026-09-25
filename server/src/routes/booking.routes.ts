@@ -1,0 +1,130 @@
+import { Router } from 'express';
+import { db } from '../db/database.js';
+
+const r = Router();
+
+const times = [
+  '09:00',
+  '10:00',
+  '11:00',
+  '12:00',
+  '13:00',
+  '14:00',
+  '15:00',
+  '16:00',
+  '17:00',
+  '18:00',
+];
+
+// Get available booking times
+r.get('/availability', (req, res) => {
+  const { date, serviceId, barberId } = req.query;
+
+  if (!date || !serviceId || !barberId) {
+    return res.status(400).json({
+      message: 'date, serviceId and barberId are required',
+    });
+  }
+
+  const rows = db
+    .prepare(
+      `SELECT booking_time
+       FROM bookings
+       WHERE booking_date = ?
+         AND barber_id = ?
+         AND status = 'confirmed'`
+    )
+    .all(date, barberId) as { booking_time: string }[];
+
+  const taken = new Set(rows.map((x) => x.booking_time));
+
+  res.json(times.filter((time) => !taken.has(time)));
+});
+
+// Create booking
+r.post('/', (req, res) => {
+  const {
+    customerName,
+    customerEmail,
+    customerPhone,
+    serviceId,
+    barberId,
+    date,
+    time,
+  } = req.body;
+
+  if (
+    !customerName ||
+    !customerEmail ||
+    !customerPhone ||
+    !serviceId ||
+    !barberId ||
+    !date ||
+    !time
+  ) {
+    return res.status(400).json({
+      message: 'Please complete all booking fields.',
+    });
+  }
+
+  // Check if the selected slot is already booked
+  const exists = db
+    .prepare(
+      `SELECT id
+       FROM bookings
+       WHERE booking_date = ?
+         AND booking_time = ?
+         AND barber_id = ?
+         AND status = 'confirmed'`
+    )
+    .get(date, time, barberId);
+
+  if (exists) {
+    return res.status(409).json({
+      message: 'That time is no longer available. Please choose another slot.',
+    });
+  }
+
+  // Create booking
+  const info = db
+    .prepare(
+      `INSERT INTO bookings (
+        customer_name,
+        customer_email,
+        customer_phone,
+        service_id,
+        barber_id,
+        booking_date,
+        booking_time
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?)`
+    )
+    .run(
+      customerName,
+      customerEmail,
+      customerPhone,
+      serviceId,
+      barberId,
+      date,
+      time
+    );
+
+  // Return complete booking information
+  const booking = db
+    .prepare(
+      `SELECT
+        b.*,
+        s.name AS service,
+        s.duration_minutes AS duration,
+        br.name AS barber
+       FROM bookings b
+       JOIN services s ON s.id = b.service_id
+       JOIN barbers br ON br.id = b.barber_id
+       WHERE b.id = ?`
+    )
+    .get(info.lastInsertRowid);
+
+  res.status(201).json(booking);
+});
+
+export default r;
