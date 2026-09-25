@@ -9,7 +9,7 @@ export default function Navbar() {
     ['Home', '/'],
     ['Services', '/services'],
     ['Our Story', '/about'],
-    ['Book', '/booking'],
+    ['Contact', '/contact'],
   ];
 
   const closeMenu = () => {
@@ -66,10 +66,18 @@ export default function Navbar() {
           Book an appointment
         </Link>
 
-        {/* Mobile Menu Button */}
+        {/* Mobile Booking Button + Menu Button */}
+        <div className="md:hidden flex items-center gap-4">
+        <Link
+          to="/booking"
+          onClick={closeMenu}
+          className="btn-gold btn-sm"
+        >
+          Book Now
+        </Link>
         <button
           type="button"
-          className="md:hidden text-white"
+          className="text-white"
           onClick={() => setOpen((prev) => !prev)}
           aria-label={open ? 'Close menu' : 'Open menu'}
           aria-expanded={open}
@@ -80,6 +88,7 @@ export default function Navbar() {
             <Menu size={26} />
           )}
         </button>
+        </div>
       </div>
 
       {/* Mobile Navigation */}

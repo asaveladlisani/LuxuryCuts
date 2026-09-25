@@ -784,6 +784,14 @@ a.luxurycuts-cta {
     }
 }
 
+.btn-gold.btn-sm {
+    min-height: 38px;
+
+    padding: 0.6rem 1rem;
+
+    font-size: 0.8rem;
+}
+
 @media (max-width: 480px) {
 
     .container {
